@@ -2,13 +2,6 @@
 # 📌 Global Ignores (Safe for all services)
 # ───────────────────────────────
 
-# Node.js dependencies
-**/node_modules/
-
-# Compiled output
-**/dist/
-**/build/
-
 # OS files
 .DS_Store
 
@@ -31,6 +24,9 @@
 # ───────────────────────────────
 # 📌 Backend-Specific Ignores (Applies to ANY Depth Inside /apps/backend/)
 # ───────────────────────────────
+
+# Node.js dependencies
+apps/backend/node_modules/
 
 # Build artifacts
 apps/backend/**/dist/
