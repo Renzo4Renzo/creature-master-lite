@@ -26,41 +26,41 @@
 # ───────────────────────────────
 
 # Node.js dependencies
-apps/backend/node_modules/
+/apps/backend/node_modules/
 
 # Build artifacts
-apps/backend/**/dist/
-apps/backend/**/build/
+/apps/backend/**/dist/
+/apps/backend/**/build/
 
 # Logs
-apps/backend/**/logs/
-apps/backend/**.log
-apps/backend/**/npm-debug.log*
-apps/backend/**/pnpm-debug.log*
-apps/backend/**/yarn-debug.log*
-apps/backend/**/yarn-error.log*
-apps/backend/**/lerna-debug.log*
+/apps/backend/**/logs/
+/apps/backend/**.log
+/apps/backend/**/npm-debug.log*
+/apps/backend/**/pnpm-debug.log*
+/apps/backend/**/yarn-debug.log*
+/apps/backend/**/yarn-error.log*
+/apps/backend/**/lerna-debug.log*
 
 # Test coverage
-apps/backend/**/coverage/
-apps/backend/**/.nyc_output/
+/apps/backend/**/coverage/
+/apps/backend/**/.nyc_output/
 
 # Temporary files
-apps/backend/**/.temp/
-apps/backend/**/.tmp/
+/apps/backend/**/.temp/
+/apps/backend/**/.tmp/
 
 # Runtime data
-apps/backend/**/pids/
-apps/backend/**.pid
-apps/backend/**.seed
-apps/backend/**.pid.lock
+/apps/backend/**/pids/
+/apps/backend/**.pid
+/apps/backend/**.seed
+/apps/backend/**.pid.lock
 
 # Diagnostic reports
-apps/backend/**/report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+/apps/backend/**/report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # dotenv environment variable files
-apps/backend/**/.env
-apps/backend/**/.env.development.local
-apps/backend/**/.env.test.local
-apps/backend/**/.env.production.local
-apps/backend/**/.env.local
+/apps/backend/**/.env
+/apps/backend/**/.env.development.local
+/apps/backend/**/.env.test.local
+/apps/backend/**/.env.production.local
+/apps/backend/**/.env.local
