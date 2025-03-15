@@ -8,3 +8,7 @@ POSTGRES_USER=admin
 POSTGRES_PASSWORD=secret
 POSTGRES_DB=creature_master
 PORT=5432
+
+## Running Migrations
+
+npx prisma migrate dev --name [your_name]
