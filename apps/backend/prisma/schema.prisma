@@ -27,6 +27,7 @@ model Player {
   friendships2 Friendship[] @relation("player_friends_2")
 
   matchmakingEntries MatchmakingQueue[]
+  gameCards GameCard[]
 }
 
 model Friendship {
@@ -64,6 +65,8 @@ model LiveGame {
   player2      Player @relation("live_game_player2", fields: [player2Id], references: [id])
   turns        Turn[]
   completedMatch CompletedMatch? @relation("game_match")
+
+  gameCards   GameCard[] // Tracks individual card instances in this game
 }
 
 model Turn {
@@ -93,9 +96,11 @@ model Card {
   type       String  // "hero" or "creature"
   health     Int
   temperament String? // "Sanguine", "Phlegmatic", "Choleric", "Melancholic"
-  abilities  Ability[]
+  imageUrl   String
+  abilities  CardAbility[]
 
   decks      DeckCard[]
+  gameCards  GameCard[]
 }
 
 model DeckCard {
@@ -109,15 +114,47 @@ model DeckCard {
 }
 
 model Ability {
-  id         String  @id @default(uuid())
-  name       String
+  id          String  @id @default(uuid())
+  name        String  @unique
   description String
-  trigger    String // "onRecruit", "onBattleStart", "onWin", "onLose"
-  effectType String // "boost", "heal", "damage", etc.
-  effectValue Int
-  cardId     String
+  trigger     String  // "onRecruit", "onBattleStart", "onWin", etc.
 
-  card       Card @relation(fields: [cardId], references: [id])
+  cardAbilities CardAbility[] // Updated reference
+  gameCardAbilities GameCardAbility[]
+}
+
+model CardAbility {
+  id             String  @id @default(uuid())
+  cardId         String
+  abilityId      String
+
+  card           Card @relation(fields: [cardId], references: [id])
+  ability        Ability @relation(fields: [abilityId], references: [id])
+
+  @@unique([cardId, abilityId]) // Prevent duplicate abilities on the same card
+}
+
+model GameCard {
+  id         String  @id @default(uuid())
+  gameId     String
+  cardId     String
+  ownerId    String
+  health     Int
+  abilities  GameCardAbility[]
+
+  game      LiveGame @relation(fields: [gameId], references: [id])
+  card      Card @relation(fields: [cardId], references: [id])
+  owner     Player @relation(fields: [ownerId], references: [id])
+}
+
+model GameCardAbility {
+  id           String  @id @default(uuid())
+  gameCardId   String
+  abilityId    String
+  used         Boolean @default(false)
+
+  gameCard     GameCard @relation(fields: [gameCardId], references: [id])
+  ability      Ability @relation(fields: [abilityId], references: [id])
 }
 
 model CompletedMatch {
@@ -125,10 +162,10 @@ model CompletedMatch {
   player1Id  String
   player2Id  String
   winnerId   String?
-  gameId     String  @unique // ✅ Fix: Enforce uniqueness for one-to-one relation
+  gameId     String  @unique // Enforce uniqueness for one-to-one relation
   createdAt  DateTime @default(now())
 
   player1    Player @relation("completed_match_player1", fields: [player1Id], references: [id])
   player2    Player @relation("completed_match_player2", fields: [player2Id], references: [id])
-  game       LiveGame @relation("game_match", fields: [gameId], references: [id]) // ✅ Fix: Use same relation name
+  game       LiveGame @relation("game_match", fields: [gameId], references: [id])
 }
