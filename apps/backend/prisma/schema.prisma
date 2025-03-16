@@ -13,10 +13,11 @@ model Player {
   email     String  @unique
   password  String
   isAI      Boolean @default(false) // AI opponents (false = human, true = bot)
-  
+
   decks     Deck[]
   turns     Turn[]
-  
+  turnPhases TurnPhase[]
+
   liveGamesP1 LiveGame[] @relation("live_game_player1")
   liveGamesP2 LiveGame[] @relation("live_game_player2")
 
@@ -64,21 +65,32 @@ model LiveGame {
   player1      Player @relation("live_game_player1", fields: [player1Id], references: [id])
   player2      Player @relation("live_game_player2", fields: [player2Id], references: [id])
   turns        Turn[]
-  completedMatch CompletedMatch? @relation("game_match")
-
-  gameCards   GameCard[] // Tracks individual card instances in this game
+  gameCards    GameCard[]
 }
 
 model Turn {
-  id       String  @id @default(uuid())
-  gameId   String
-  playerId String
-  turnNumber Int
-  action   String // "draw", "deploy", "attack", "use_ability"
-  createdAt DateTime @default(now())
+  id          String  @id @default(uuid())
+  gameId      String
+  playerId    String
+  turnNumber  Int
+  phases      TurnPhase[]
+  createdAt   DateTime @default(now())
 
-  game     LiveGame @relation(fields: [gameId], references: [id])
-  player   Player @relation(fields: [playerId], references: [id])
+  game        LiveGame @relation(fields: [gameId], references: [id])
+  player      Player @relation(fields: [playerId], references: [id])
+}
+
+model TurnPhase {
+  id          String  @id @default(uuid())
+  turnId      String
+  playerId    String
+  phase       String  // "Draw", "Deployment", "Attack", "End"
+  action      String  // What happened in this phase? (e.g., "Drew 1 card", "Deployed Fire Dragon")
+  target      String? // If applicable, which card/player was affected?
+  createdAt   DateTime @default(now())
+
+  turn        Turn @relation(fields: [turnId], references: [id], onDelete: Cascade)
+  player      Player @relation(fields: [playerId], references: [id]) // Opposite relation added
 }
 
 model Deck {
@@ -119,7 +131,7 @@ model Ability {
   description String
   trigger     String  // "onRecruit", "onBattleStart", "onWin", etc.
 
-  cardAbilities CardAbility[] // Updated reference
+  cardAbilities CardAbility[]
   gameCardAbilities GameCardAbility[]
 }
 
@@ -142,7 +154,7 @@ model GameCard {
   health     Int
   abilities  GameCardAbility[]
 
-  game      LiveGame @relation(fields: [gameId], references: [id])
+  game      LiveGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
   card      Card @relation(fields: [cardId], references: [id])
   owner     Player @relation(fields: [ownerId], references: [id])
 }
@@ -153,7 +165,7 @@ model GameCardAbility {
   abilityId    String
   used         Boolean @default(false)
 
-  gameCard     GameCard @relation(fields: [gameCardId], references: [id])
+  gameCard     GameCard @relation(fields: [gameCardId], references: [id], onDelete: Cascade)
   ability      Ability @relation(fields: [abilityId], references: [id])
 }
 
@@ -162,10 +174,9 @@ model CompletedMatch {
   player1Id  String
   player2Id  String
   winnerId   String?
-  gameId     String  @unique // Enforce uniqueness for one-to-one relation
+  gameData   Json  // Store final match state instead of linking LiveGame
   createdAt  DateTime @default(now())
 
   player1    Player @relation("completed_match_player1", fields: [player1Id], references: [id])
   player2    Player @relation("completed_match_player2", fields: [player2Id], references: [id])
-  game       LiveGame @relation("game_match", fields: [gameId], references: [id])
 }
