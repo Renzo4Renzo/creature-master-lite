@@ -152,6 +152,7 @@ model GameCard {
   cardId     String
   ownerId    String
   health     Int
+  energy     Int?    // Only applies to heroes
   abilities  GameCardAbility[]
 
   game      LiveGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
