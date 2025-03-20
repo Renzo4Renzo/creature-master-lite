@@ -12,7 +12,7 @@ model Player {
   username  String  @unique
   email     String  @unique
   password  String
-  isAI      Boolean @default(false) // AI opponents (false = human, true = bot)
+  isAI      Boolean @default(false)
 
   decks     Deck[]
   turns     Turn[]
@@ -31,6 +31,35 @@ model Player {
   gameCards GameCard[]
 }
 
+model Deck {
+  id        String @id @default(uuid())
+  playerId  String
+  name      String
+  hero      DeckHero?
+  creatures DeckCreature[]
+
+  player    Player @relation(fields: [playerId], references: [id])
+}
+
+model DeckHero {
+  id        String @id @default(uuid())
+  deckId    String @unique
+  heroId    String
+
+  deck      Deck @relation(fields: [deckId], references: [id])
+  hero      Hero @relation(fields: [heroId], references: [id])
+}
+
+model DeckCreature {
+  id        String @id @default(uuid())
+  deckId    String
+  creatureId String
+  quantity  Int @default(1)
+
+  deck      Deck @relation(fields: [deckId], references: [id])
+  creature  Creature @relation(fields: [creatureId], references: [id])
+}
+
 model Friendship {
   id        String  @id @default(uuid())
   player1Id String
@@ -40,13 +69,13 @@ model Friendship {
   player1   Player @relation("player_friends_1", fields: [player1Id], references: [id])
   player2   Player @relation("player_friends_2", fields: [player2Id], references: [id])
 
-  @@unique([player1Id, player2Id]) // Prevents duplicate friendships
+  @@unique([player1Id, player2Id])
 }
 
 model MatchmakingQueue {
   id        String  @id @default(uuid())
   playerId  String
-  createdAt DateTime @default(now()) // Used for 60s timeout logic
+  createdAt DateTime @default(now())
 
   player    Player @relation(fields: [playerId], references: [id])
 }
@@ -56,7 +85,7 @@ model LiveGame {
   player1Id    String
   player2Id    String
   currentTurn  Int     @default(1)
-  status       String  @default("ongoing") // "ongoing", "finished"
+  status       String  @default("ongoing")
   winnerId     String?
   lifePointsP1 Int     @default(10)
   lifePointsP2 Int     @default(10)
@@ -84,80 +113,104 @@ model TurnPhase {
   id          String  @id @default(uuid())
   turnId      String
   playerId    String
-  phase       String  // "Draw", "Deployment", "Attack", "End"
-  action      String  // What happened in this phase? (e.g., "Drew 1 card", "Deployed Fire Dragon")
-  target      String? // If applicable, which card/player was affected?
+  phase       String
+  action      String
+  target      String?
   createdAt   DateTime @default(now())
 
   turn        Turn @relation(fields: [turnId], references: [id], onDelete: Cascade)
-  player      Player @relation(fields: [playerId], references: [id]) // Opposite relation added
+  player      Player @relation(fields: [playerId], references: [id])
 }
 
-model Deck {
-  id        String @id @default(uuid())
-  playerId  String
-  name      String
-  cards     DeckCard[]
-
-  player    Player @relation(fields: [playerId], references: [id])
-}
-
-model Card {
+model CompletedMatch {
   id         String  @id @default(uuid())
-  name       String  @unique
-  type       String  // "hero" or "creature"
-  health     Int
-  temperament String? // "Sanguine", "Phlegmatic", "Choleric", "Melancholic"
-  imageUrl   String
-  abilities  CardAbility[]
+  player1Id  String
+  player2Id  String
+  winnerId   String?
+  gameData   Json
+  createdAt  DateTime @default(now())
 
-  decks      DeckCard[]
-  gameCards  GameCard[]
+  player1    Player @relation("completed_match_player1", fields: [player1Id], references: [id])
+  player2    Player @relation("completed_match_player2", fields: [player2Id], references: [id])
 }
 
-model DeckCard {
-  id       String @id @default(uuid())
-  deckId   String
-  cardId   String
-  quantity Int @default(1)
+model Creature {
+  id          String @id @default(uuid())
+  name        String @unique
+  health      Int
+  temperament String
+  imageUrl    String
+  abilities   CreatureAbility[]
 
-  deck     Deck @relation(fields: [deckId], references: [id])
-  card     Card @relation(fields: [cardId], references: [id])
+  decks       DeckCreature[]
+  gameCards   GameCard[]
+}
+
+model Hero {
+  id          String @id @default(uuid())
+  name        String @unique
+  imageUrl    String
+  abilities   HeroAbility[]
+
+  decks       DeckHero[]
+  gameCards   GameCard[]
 }
 
 model Ability {
   id          String  @id @default(uuid())
   name        String  @unique
   description String
-  trigger     String  // "onRecruit", "onBattleStart", "onWin", etc.
-
-  cardAbilities CardAbility[]
+  trigger     String
+  abilitiesActions AbilityAction[]
+  creatureAbilities CreatureAbility[]
+  heroAbilities     HeroAbility[]
   gameCardAbilities GameCardAbility[]
 }
 
-model CardAbility {
-  id             String  @id @default(uuid())
-  cardId         String
-  abilityId      String
+model AbilityAction {
+  id          String  @id @default(uuid())
+  abilityId   String
+  action      String
+  dynamicQty  Boolean
 
-  card           Card @relation(fields: [cardId], references: [id])
-  ability        Ability @relation(fields: [abilityId], references: [id])
+  ability     Ability @relation(fields: [abilityId], references: [id], onDelete: Cascade)
+}
 
-  @@unique([cardId, abilityId]) // Prevent duplicate abilities on the same card
+model CreatureAbility {
+  id          String @id @default(uuid())
+  creatureId  String
+  abilityId   String
+
+  creature    Creature @relation(fields: [creatureId], references: [id])
+  ability     Ability  @relation(fields: [abilityId], references: [id])
+
+  @@unique([creatureId, abilityId])
+}
+
+model HeroAbility {
+  id          String @id @default(uuid())
+  heroId      String
+  abilityId   String
+  conditions  Json
+
+  hero        Hero @relation(fields: [heroId], references: [id])
+  ability     Ability @relation(fields: [abilityId], references: [id])
 }
 
 model GameCard {
-  id         String  @id @default(uuid())
+  id         String @id @default(uuid())
   gameId     String
-  cardId     String
+  creatureId String?
+  heroId     String?
   ownerId    String
   health     Int
-  energy     Int?    // Only applies to heroes
+  energy     Int?
   abilities  GameCardAbility[]
 
-  game      LiveGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  card      Card @relation(fields: [cardId], references: [id])
-  owner     Player @relation(fields: [ownerId], references: [id])
+  game       LiveGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  creature   Creature? @relation(fields: [creatureId], references: [id])
+  hero       Hero? @relation(fields: [heroId], references: [id])
+  owner      Player @relation(fields: [ownerId], references: [id])
 }
 
 model GameCardAbility {
@@ -168,16 +221,4 @@ model GameCardAbility {
 
   gameCard     GameCard @relation(fields: [gameCardId], references: [id], onDelete: Cascade)
   ability      Ability @relation(fields: [abilityId], references: [id])
-}
-
-model CompletedMatch {
-  id         String  @id @default(uuid())
-  player1Id  String
-  player2Id  String
-  winnerId   String?
-  gameData   Json  // Store final match state instead of linking LiveGame
-  createdAt  DateTime @default(now())
-
-  player1    Player @relation("completed_match_player1", fields: [player1Id], references: [id])
-  player2    Player @relation("completed_match_player2", fields: [player2Id], references: [id])
 }
