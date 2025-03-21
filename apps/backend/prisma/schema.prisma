@@ -80,7 +80,10 @@ model MatchmakingQueue {
 
   player    Player @relation(fields: [playerId], references: [id])
   
-  @@index([createdAt]) // Indexing for quicker expiration queries
+  @@index([createdAt])
+  @@index([createdAt, playerId])
+
+  @@unique([playerId])
 }
 
 model LiveGame {
@@ -101,6 +104,7 @@ model LiveGame {
   gameHeroes   GameHero[]
 
   @@index([player1Id, player2Id])
+  @@index([status, createdAt])
 }
 
 model Turn {
@@ -140,6 +144,8 @@ model CompletedMatch {
 
   player1    Player @relation("completed_match_player1", fields: [player1Id], references: [id])
   player2    Player @relation("completed_match_player2", fields: [player2Id], references: [id])
+
+  @@index([createdAt])
 }
 
 model Creature {
@@ -216,12 +222,13 @@ model GameCreature {
   creatureId String
   ownerId    String
   health     Int
-  energy     Int?
   abilities  GameCardAbility[]
 
   game       LiveGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
   creature   Creature @relation(fields: [creatureId], references: [id])
   owner      Player @relation(fields: [ownerId], references: [id])
+
+  @@index([gameId, ownerId])
 }
 
 model GameHero {
@@ -235,6 +242,8 @@ model GameHero {
   game       LiveGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
   hero       Hero @relation(fields: [heroId], references: [id])
   owner      Player @relation(fields: [ownerId], references: [id])
+
+  @@index([gameId, ownerId])
 }
 
 model GameCardAbility {
