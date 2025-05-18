@@ -12,9 +12,7 @@ import { RedisService } from 'src/redis/redis.service';
 import { WebSocketService } from './websocket.service';
 
 @WebSocketGateway({
-  cors: {
-    origin: '*', //TODO: Change this to the frontend URL
-  },
+  cors: true,
 })
 export class WebsocketGateway
   implements OnGatewayConnection, OnGatewayDisconnect
@@ -34,7 +32,7 @@ export class WebsocketGateway
     this.redisService.subscribe('move-update', (data) => {
       this.websocketService.sendToRoom(
         `game-${data.gameId}`,
-        'moveUpdate',
+        'move-update',
         data,
       );
     });
@@ -58,7 +56,7 @@ export class WebsocketGateway
     return { event: 'joined', data };
   }
 
-  @SubscribeMessage('sendMove')
+  @SubscribeMessage('move')
   async handlePlayerMove(
     @MessageBody() data: { gameId: string; move: string },
   ) {
@@ -68,6 +66,10 @@ export class WebsocketGateway
     await this.redisService.publish('move-update', data);
 
     // Send move to the local WebSocket instance
-    this.websocketService.sendToRoom(`game-${data.gameId}`, 'moveUpdate', data);
+    this.websocketService.sendToRoom(
+      `game-${data.gameId}`,
+      'move-update',
+      data,
+    );
   }
 }

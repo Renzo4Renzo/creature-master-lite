@@ -16,8 +16,6 @@ export class RedisService implements OnModuleInit {
     this.publisher = new Redis(redisUrl);
     this.subscriber = new Redis(redisUrl);
 
-    console.log('✅ Redis connected using ioredis');
-
     this.subscriber.on('message', (channel, message) => {
       const data = JSON.parse(message);
       const handler = this.eventHandlers.get(channel);
