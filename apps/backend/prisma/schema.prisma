@@ -164,6 +164,7 @@ model Hero {
   id          String @id @default(uuid())
   name        String @unique
   imageUrl    String
+  conditions  Json
   abilities   HeroAbility[]
 
   decks       DeckHero[]
@@ -210,7 +211,6 @@ model HeroAbility {
   id          String @id @default(uuid())
   heroId      String
   abilityId   String
-  conditions  Json
 
   hero        Hero @relation(fields: [heroId], references: [id])
   ability     Ability @relation(fields: [abilityId], references: [id])
