@@ -20,6 +20,10 @@ model Player {
   friendships1 Friendship[] @relation("player_friends_1")
   friendships2 Friendship[] @relation("player_friends_2")
   matchmakingEntries MatchmakingQueue[]
+  creaturesInGame CreatureInGame[]
+  heroesInGame HeroInGame[]
+  turns Turn[]
+  turnPhases TurnPhase[]
 }
 
 model Deck {
@@ -166,8 +170,6 @@ model CreatureInGame {
   game       Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
   creature   Creature @relation(fields: [creatureId], references: [id])
   owner      Player   @relation(fields: [ownerId], references: [id])
-
-  @@index([gameId, ownerId])
 }
 
 model HeroInGame {
@@ -181,8 +183,6 @@ model HeroInGame {
   game      Game  @relation(fields: [gameId], references: [id], onDelete: Cascade)
   hero      Hero  @relation(fields: [heroId], references: [id])
   owner     Player @relation(fields: [ownerId], references: [id])
-
-  @@index([gameId, ownerId])
 }
 
 model Turn {
@@ -195,8 +195,6 @@ model Turn {
 
   game        Game @relation(fields: [gameId], references: [id])
   player      Player @relation(fields: [playerId], references: [id])
-
-  @@index([gameId, playerId])
 }
 
 model TurnPhase {
@@ -208,8 +206,6 @@ model TurnPhase {
 
   turn        Turn @relation(fields: [turnId], references: [id], onDelete: Cascade)
   player      Player @relation(fields: [playerId], references: [id])
-
-  @@index([turnId, playerId])
 }
 
 model Friendship {
