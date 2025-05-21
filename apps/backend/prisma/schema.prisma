@@ -61,7 +61,7 @@ model Creature {
   health          Int
   storage         Int
   imageUrl        String
-  abilities       CreatureAbility[]
+  abilities       Ability[]
 
   decks           DeckCreature[]
   creaturesInGame CreatureInGame[]
@@ -71,68 +71,59 @@ model Hero {
   id          String @id @default(uuid())
   name        String @unique
   imageUrl    String
-  abilities   HeroAbility[]
 
   decks       DeckHero[]
   heroesInGame HeroInGame[]
+  abilityOptions HeroAbilityOption[]
 }
 
 model Ability {
-  id          String  @id @default(uuid())
-  name        String  @unique
-  quality     AbilityQuality
-  description String?
+  id              String @id @default(uuid())
+  name            String @unique
+  description     String?
+  quality         AbilityQuality
+  creatureId      String
+  trigger         AbilityTrigger
+  targetType      TargetType
+  targetOwner     TargetOwner
+  targetLocation  TargetLocation
+  value           Int @default(0)
+  singleUse       Boolean @default(false)
+  actions         AbilityAction[]
+  abilityOptions  HeroAbilityOption[]
+  inGame          AbilityInGame[]
 
-  creatureAbilities CreatureAbility[]
-  heroAbilities     HeroAbility[]
-  gameAbilities     AbilityInGame[]
-}
-
-model CreatureAbility {
-  id                String @id @default(uuid())
-  creatureId        String
-  abilityId         String
-  trigger           AbilityTrigger
-  targetType        TargetType
-  targetOwner       TargetOwner
-  targetLocation    TargetLocation
-  singleUse         Boolean @default(false)
-  actions           AbilityAction[]
-
-  creature          Creature @relation(fields: [creatureId], references: [id])
-  ability           Ability  @relation(fields: [abilityId], references: [id])
-
-  @@unique([creatureId, abilityId])
+  creature       Creature @relation(fields: [creatureId], references: [id])
 }
 
 model AbilityAction {
-  id                String @id @default(uuid())
-  creatureAbilityId String
-  action            AbilityActionType
-  dynamicQty        Boolean
+  id           String @id @default(uuid())
+  abilityId    String
+  action       AbilityActionType
+  dynamicValue Boolean @default(true)
 
-  creatureAbility   CreatureAbility @relation(fields: [creatureAbilityId], references: [id], onDelete: Cascade)
+  ability    Ability @relation(fields: [abilityId], references: [id], onDelete: Cascade)
+}
+
+model HeroAbilityOption {
+  id        String @id @default(uuid())
+  heroId    String
+  abilityId String
+  cost      Int
+
+  hero      Hero    @relation(fields: [heroId], references: [id])
+  ability   Ability @relation(fields: [abilityId], references: [id])
 }
 
 model AbilityInGame {
   id              String  @id @default(uuid())
-  creatureInGameId String?
-  heroInGameId     String?
+  creatureInGameId String
   abilityId       String
   used            Boolean @default(false)
+  grantedByHero   Boolean @default(false)
 
-  creatureInGame  CreatureInGame? @relation(fields: [creatureInGameId], references: [id])
-  heroInGame      HeroInGame?     @relation(fields: [heroInGameId], references: [id])
+  creatureInGame  CreatureInGame @relation(fields: [creatureInGameId], references: [id])
   ability         Ability         @relation(fields: [abilityId], references: [id])
-}
-
-model HeroAbility {
-  id        String @id @default(uuid())
-  heroId    String
-  abilityId String
-
-  hero      Hero @relation(fields: [heroId], references: [id])
-  ability   Ability @relation(fields: [abilityId], references: [id])
 }
 
 model Game {
@@ -178,7 +169,6 @@ model HeroInGame {
   heroId    String
   ownerId   String
   energy    Int
-  abilities AbilityInGame[]
 
   game      Game  @relation(fields: [gameId], references: [id], onDelete: Cascade)
   hero      Hero  @relation(fields: [heroId], references: [id])
