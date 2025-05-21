@@ -15,21 +15,11 @@ model Player {
   isAI      Boolean @default(false)
 
   decks     Deck[]
-  turns     Turn[]
-  turnPhases TurnPhase[]
-
-  liveGamesP1 LiveGame[] @relation("live_game_player1")
-  liveGamesP2 LiveGame[] @relation("live_game_player2")
-
-  completedMatchesP1 CompletedMatch[] @relation("completed_match_player1")
-  completedMatchesP2 CompletedMatch[] @relation("completed_match_player2")
-
+  liveGamesP1 Game[] @relation("game_player1")
+  liveGamesP2 Game[] @relation("game_player2")
   friendships1 Friendship[] @relation("player_friends_1")
   friendships2 Friendship[] @relation("player_friends_2")
-
   matchmakingEntries MatchmakingQueue[]
-  gameCreatures GameCreature[]
-  gameHeroes GameHero[]
 }
 
 model Deck {
@@ -52,13 +42,174 @@ model DeckHero {
 }
 
 model DeckCreature {
-  id        String @id @default(uuid())
-  deckId    String
+  id         String @id @default(uuid())
+  deckId     String
   creatureId String
-  quantity  Int @default(1)
+  quantity   Int @default(1)
 
-  deck      Deck @relation(fields: [deckId], references: [id])
-  creature  Creature @relation(fields: [creatureId], references: [id])
+  deck       Deck @relation(fields: [deckId], references: [id])
+  creature   Creature @relation(fields: [creatureId], references: [id])
+}
+
+model Creature {
+  id              String @id @default(uuid())
+  name            String @unique
+  health          Int
+  storage         Int
+  imageUrl        String
+  abilities       CreatureAbility[]
+
+  decks           DeckCreature[]
+  creaturesInGame CreatureInGame[]
+}
+
+model Hero {
+  id          String @id @default(uuid())
+  name        String @unique
+  imageUrl    String
+  abilities   HeroAbility[]
+
+  decks       DeckHero[]
+  heroesInGame HeroInGame[]
+}
+
+model Ability {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  quality     AbilityQuality
+  description String?
+
+  creatureAbilities CreatureAbility[]
+  heroAbilities     HeroAbility[]
+  gameAbilities     AbilityInGame[]
+}
+
+model CreatureAbility {
+  id                String @id @default(uuid())
+  creatureId        String
+  abilityId         String
+  trigger           AbilityTrigger
+  targetType        TargetType
+  targetOwner       TargetOwner
+  targetLocation    TargetLocation
+  singleUse         Boolean @default(false)
+  actions           AbilityAction[]
+
+  creature          Creature @relation(fields: [creatureId], references: [id])
+  ability           Ability  @relation(fields: [abilityId], references: [id])
+
+  @@unique([creatureId, abilityId])
+}
+
+model AbilityAction {
+  id                String @id @default(uuid())
+  creatureAbilityId String
+  action            AbilityActionType
+  dynamicQty        Boolean
+
+  creatureAbility   CreatureAbility @relation(fields: [creatureAbilityId], references: [id], onDelete: Cascade)
+}
+
+model AbilityInGame {
+  id              String  @id @default(uuid())
+  creatureInGameId String?
+  heroInGameId     String?
+  abilityId       String
+  used            Boolean @default(false)
+
+  creatureInGame  CreatureInGame? @relation(fields: [creatureInGameId], references: [id])
+  heroInGame      HeroInGame?     @relation(fields: [heroInGameId], references: [id])
+  ability         Ability         @relation(fields: [abilityId], references: [id])
+}
+
+model HeroAbility {
+  id        String @id @default(uuid())
+  heroId    String
+  abilityId String
+
+  hero      Hero @relation(fields: [heroId], references: [id])
+  ability   Ability @relation(fields: [abilityId], references: [id])
+}
+
+model Game {
+  id           String @id @default(uuid())
+  player1Id    String
+  player2Id    String
+  currentTurn  Int @default(1)
+  status       String @default("ongoing")
+  winnerId     String?
+  stashP1      Int @default(10)
+  stashP2      Int @default(10)
+  createdAt    DateTime @default(now())
+
+  player1      Player @relation("game_player1", fields: [player1Id], references: [id])
+  player2      Player @relation("game_player2", fields: [player2Id], references: [id])
+  turns        Turn[]
+  creatures    CreatureInGame[]
+  heroes       HeroInGame[]
+
+  @@index([player1Id, player2Id])
+  @@index([status, createdAt])
+}
+
+model CreatureInGame {
+  id         String @id @default(uuid())
+  gameId     String
+  creatureId String
+  ownerId    String
+  health     Int
+  storage    Int
+  row        Int
+  column     Int
+  abilities  AbilityInGame[]
+
+  game       Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  creature   Creature @relation(fields: [creatureId], references: [id])
+  owner      Player   @relation(fields: [ownerId], references: [id])
+
+  @@index([gameId, ownerId])
+}
+
+model HeroInGame {
+  id        String @id @default(uuid())
+  gameId    String
+  heroId    String
+  ownerId   String
+  energy    Int
+  abilities AbilityInGame[]
+
+  game      Game  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  hero      Hero  @relation(fields: [heroId], references: [id])
+  owner     Player @relation(fields: [ownerId], references: [id])
+
+  @@index([gameId, ownerId])
+}
+
+model Turn {
+  id          String  @id @default(uuid())
+  gameId      String
+  playerId    String
+  turnNumber  Int
+  phases      TurnPhase[]
+  createdAt   DateTime @default(now())
+
+  game        Game @relation(fields: [gameId], references: [id])
+  player      Player @relation(fields: [playerId], references: [id])
+
+  @@index([gameId, playerId])
+}
+
+model TurnPhase {
+  id          String  @id @default(uuid())
+  turnId      String
+  playerId    String
+  phase       String
+  createdAt   DateTime @default(now())
+
+  turn        Turn @relation(fields: [turnId], references: [id], onDelete: Cascade)
+  player      Player @relation(fields: [playerId], references: [id])
+
+  @@index([turnId, playerId])
 }
 
 model Friendship {
@@ -79,181 +230,52 @@ model MatchmakingQueue {
   createdAt DateTime @default(now())
 
   player    Player @relation(fields: [playerId], references: [id])
-  
+
   @@index([createdAt])
   @@index([createdAt, playerId])
-
   @@unique([playerId])
 }
 
-model LiveGame {
-  id           String  @id @default(uuid())
-  player1Id    String
-  player2Id    String
-  currentTurn  Int     @default(1)
-  status       String  @default("ongoing")
-  winnerId     String?
-  lifePointsP1 Int     @default(10)
-  lifePointsP2 Int     @default(10)
-  createdAt    DateTime @default(now())
-
-  player1      Player @relation("live_game_player1", fields: [player1Id], references: [id])
-  player2      Player @relation("live_game_player2", fields: [player2Id], references: [id])
-  turns        Turn[]
-  gameCreatures GameCreature[]
-  gameHeroes   GameHero[]
-
-  @@index([player1Id, player2Id])
-  @@index([status, createdAt])
+enum AbilityQuality {
+  REGULAR
+  BEST
 }
 
-model Turn {
-  id          String  @id @default(uuid())
-  gameId      String
-  playerId    String
-  turnNumber  Int
-  phases      TurnPhase[]
-  createdAt   DateTime @default(now())
-
-  game        LiveGame @relation(fields: [gameId], references: [id])
-  player      Player @relation(fields: [playerId], references: [id])
-
-  @@index([gameId, playerId])
+enum AbilityTrigger {
+  RECRUITMENT_ASSIGNMENT
+  ROLLING_DICE
+  ENTERING_BATTLE
+  WINNING_BATTLE
+  DYING_IN_BATTLE
 }
 
-model TurnPhase {
-  id          String  @id @default(uuid())
-  turnId      String
-  playerId    String
-  phase       String
-  createdAt   DateTime @default(now())
-
-  turn        Turn @relation(fields: [turnId], references: [id], onDelete: Cascade)
-  player      Player @relation(fields: [playerId], references: [id])
-
-  @@index([turnId, playerId])
+enum TargetType {
+  CREATURE
+  HERO
 }
 
-model CompletedMatch {
-  id         String  @id @default(uuid())
-  player1Id  String
-  player2Id  String
-  winnerId   String?
-  gameData   Json
-  createdAt  DateTime @default(now())
-
-  player1    Player @relation("completed_match_player1", fields: [player1Id], references: [id])
-  player2    Player @relation("completed_match_player2", fields: [player2Id], references: [id])
-
-  @@index([createdAt])
+enum TargetOwner {
+  ONESELF
+  ENEMY
 }
 
-model Creature {
-  id              String @id @default(uuid())
-  name            String @unique
-  health          Int
-  temperament     String
-  imageUrl        String
-  abilities       CreatureAbility[]
-
-  decks           DeckCreature[]
-  gameCreatures   GameCreature[]
+enum TargetLocation {
+  CURRENT_ALLY
+  CURRENT_ENEMY
+  ENEMY_FIELD
+  OWN_HERO_ZONE
+  ENEMY_HERO_ZONE
 }
 
-model Hero {
-  id          String @id @default(uuid())
-  name        String @unique
-  imageUrl    String
-  conditions  Json
-  abilities   HeroAbility[]
-
-  decks       DeckHero[]
-  gameHero    GameHero?
-}
-
-model Ability {
-  id          String  @id @default(uuid())
-  name        String  @unique
-  description String
-  creatureAbilities CreatureAbility[]
-  heroAbilities     HeroAbility[]
-  gameCardAbilities GameCardAbility[]
-}
-
-model AbilityAction {
-  id                String  @id @default(uuid())
-  creatureAbilityId String
-  action            String
-  dynamicQty        Boolean
-
-  creatureAbility   CreatureAbility @relation(fields: [creatureAbilityId], references: [id], onDelete: Cascade, name: "CreatureAbility_AbilityActions")
-}
-
-model CreatureAbility {
-  id                String @id @default(uuid())
-  creatureId        String
-  abilityId         String
-  trigger           String
-  targetType        String
-  targetOwner       String
-  targetLocation    String
-  singleUse         Boolean @default(false)
-
-  abilitiesActions  AbilityAction[] @relation("CreatureAbility_AbilityActions")
-
-  creature          Creature @relation(fields: [creatureId], references: [id])
-  ability           Ability  @relation(fields: [abilityId], references: [id])
-
-  @@unique([creatureId, abilityId])
-}
-
-model HeroAbility {
-  id          String @id @default(uuid())
-  heroId      String
-  abilityId   String
-
-  hero        Hero @relation(fields: [heroId], references: [id])
-  ability     Ability @relation(fields: [abilityId], references: [id])
-}
-
-model GameCreature {
-  id         String @id @default(uuid())
-  gameId     String
-  creatureId String
-  ownerId    String
-  health     Int
-  abilities  GameCardAbility[]
-
-  game       LiveGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  creature   Creature @relation(fields: [creatureId], references: [id])
-  owner      Player @relation(fields: [ownerId], references: [id])
-
-  @@index([gameId, ownerId])
-}
-
-model GameHero {
-  id         String @id @default(uuid())
-  gameId     String
-  heroId     String @unique
-  ownerId    String
-  energy     Int
-  abilities  GameCardAbility[]
-
-  game       LiveGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  hero       Hero @relation(fields: [heroId], references: [id])
-  owner      Player @relation(fields: [ownerId], references: [id])
-
-  @@index([gameId, ownerId])
-}
-
-model GameCardAbility {
-  id           String  @id @default(uuid())
-  gameCreatureId String?
-  gameHeroId    String?
-  abilityId    String
-  used         Boolean @default(false)
-
-  gameCreature GameCreature? @relation(fields: [gameCreatureId], references: [id])
-  gameHero     GameHero? @relation(fields: [gameHeroId], references: [id])
-  ability      Ability @relation(fields: [abilityId], references: [id])
+enum AbilityActionType {
+  HEALTH_UPDATE
+  STORAGE_UPDATE
+  DICE_UPDATE
+  ASK_IF_REROLL
+  DICE_REROLL
+  ENERGY_UPDATE
+  NO_BATTLE_DAMAGE
+  DISCARD
+  CANT_MOVE
+  RETURN_TO_HAND
 }
